@@ -298,28 +298,8 @@ const TYPES = [
 ];
 const COLORS = { deposit:'#5b9cf6', savings:'#2dd4bf', stock:'#3ecf8e', cash:'#f5a623', physical:'#a78bfa', debt:'#f06565' };
 
-let items = [
-  { id:1, type:'deposit',  name:'국민은행 보통예금', amount:8500000,  note:'생활비 계좌', subitems:[] },
-  { id:2, type:'deposit',  name:'카카오뱅크 정기예금', amount:15000000, note:'연 3.5% / 만기 2025-09', subitems:[] },
-  { id:3, type:'savings',  name:'청약 적금', amount:4200000, note:'월 30만원 / 잔여 14개월', subitems:[] },
-  { id:4, type:'savings',  name:'목돈 마련 적금', amount:2400000, note:'월 20만원 / 잔여 8개월', subitems:[] },
-  { id:5, type:'stock',    name:'국내 주식', amount:12300000, note:'', subitems:[
-    { name:'삼성전자 120주', value:9240000, change:'+2.1%' },
-    { name:'카카오 50주', value:2100000, change:'-1.5%' },
-    { name:'배당금 누적', value:960000, change:'+배당' },
-  ]},
-  { id:6, type:'stock',    name:'해외 ETF', amount:5800000, note:'', subitems:[
-    { name:'S&P500 ETF', value:3900000, change:'+5.3%' },
-    { name:'나스닥 ETF', value:1900000, change:'+3.8%' },
-  ]},
-  { id:7, type:'cash',     name:'지갑 현금', amount:350000, note:'', subitems:[] },
-  { id:8, type:'cash',     name:'비상금 봉투', amount:500000, note:'서랍 보관', subitems:[] },
-  { id:9, type:'physical', name:'금 (순금 10돈)', amount:3200000, note:'', subitems:[] },
-  { id:10, type:'physical', name:'달러 현금', amount:1500000, note:'$1,100 보유', subitems:[] },
-  { id:11, type:'debt',    name:'전세대출', amount:50000000, note:'연 3.2% / 2026-06 만기', subitems:[] },
-  { id:12, type:'debt',    name:'신용카드 미결제', amount:450000, note:'이번 달 청구 예정', subitems:[] },
-];
-let nextId = 100;
+let items = [];
+let nextId = 1;
 
 // Monthly snapshot data
 const monthSnaps = [
