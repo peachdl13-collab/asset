@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="재정관리">
+<meta name="theme-color" content="#3ecf8e">
+<link rel="manifest" href="manifest.json">
+<title>자산 관리 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e222d;
+    --surface3: #252b38;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --muted: #7a8099;
+    --faint: #3a3f52;
+    --green: #3ecf8e;
+    --green-dim: rgba(62,207,142,0.12);
+    --red: #f06565;
+    --red-dim: rgba(240,101,101,0.12);
+    --blue: #5b9cf6;
+    --blue-dim: rgba(91,156,246,0.12);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.12);
+    --teal: #2dd4bf;
+    --teal-dim: rgba(45,212,191,0.12);
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'Pretendard', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    line-height: 1.6;
+    position: relative;
+  }
+  /* Layout */
+  .app { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; position: relative; }
+  .header { margin-bottom: 2.5rem; }
+  .header-top { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem; }
+  .header h1 { font-family: var(--font-display); font-size: 2.2rem; font-weight: 400; letter-spacing: -0.02em; color: var(--text); }
+  .header h1 em { font-style: italic; color: var(--green); }
+  .as-of { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+  .net-worth-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 2rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+  .nw-main { flex: 1; min-width: 200px; }
+  .nw-label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-family: var(--font-mono); }
+  .nw-value { font-family: var(--font-display); font-size: 2.8rem; color: var(--green); letter-spacing: -0.03em; }
+  .nw-meta { display: flex; gap: 2rem; flex-wrap: wrap; }
+  .nw-item { }
+  .nw-item .lbl { font-size: 11px; color: var(--muted); font-family: var(--font-mono); letter-spacing: .06em; }
+  .nw-item .val { font-size: 1.1rem; font-weight: 500; margin-top: 2px; }
+  .nw-item .val.pos { color: var(--green); }
+  .nw-item .val.neg { color: var(--red); }
+  /* Progress bar for assets vs liabilities */
+  .ratio-bar { width: 100%; height: 6px; background: var(--red-dim); border-radius: 3px; overflow: hidden; margin-top: 1rem; }
+  .ratio-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+
+  /* Asset grid */
+  .section-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-family: var(--font-mono); margin-bottom: 1rem; padding-left: 2px; }
+  .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .asset-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem 1.6rem;
+    transition: border-color .2s, transform .15s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .asset-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .asset-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+  .card-deposit::before { background: var(--blue); }
+  .card-savings::before { background: var(--teal); }
+  .card-stock::before { background: var(--green); }
+  .card-cash::before { background: var(--amber); }
+  .card-physical::before { background: var(--purple); }
+  .card-debt::before { background: var(--red); }
+
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .icon-deposit { background: var(--blue-dim); }
+  .icon-savings { background: var(--teal-dim); }
+  .icon-stock { background: var(--green-dim); }
+  .icon-cash { background: var(--amber-dim); }
+  .icon-physical { background: var(--purple-dim); }
+  .icon-debt { background: var(--red-dim); }
+  .card-badge { font-size: 11px; font-family: var(--font-mono); padding: 3px 9px; border-radius: 20px; }
+  .badge-deposit { background: var(--blue-dim); color: var(--blue); }
+  .badge-savings { background: var(--teal-dim); color: var(--teal); }
+  .badge-stock { background: var(--green-dim); color: var(--green); }
+  .badge-cash { background: var(--amber-dim); color: var(--amber); }
+  .badge-physical { background: var(--purple-dim); color: var(--purple); }
+  .badge-debt { background: var(--red-dim); color: var(--red); }
+
+  .card-title { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .card-amount { font-family: var(--font-mono); font-size: 1.55rem; font-weight: 500; letter-spacing: -0.02em; }
+  .card-amount.asset-color-deposit { color: var(--blue); }
+  .card-amount.asset-color-savings { color: var(--teal); }
+  .card-amount.asset-color-stock { color: var(--green); }
+  .card-amount.asset-color-cash { color: var(--amber); }
+  .card-amount.asset-color-physical { color: var(--purple); }
+  .card-amount.asset-color-debt { color: var(--red); }
+
+  .card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .card-items { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; display: flex; flex-direction: column; gap: 6px; }
+  .card-item { display: flex; justify-content: space-between; font-size: 13px; }
+  .card-item .item-name { color: var(--muted); }
+  .card-item .item-val { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+  .card-item .item-tag { font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
+  .tag-up { background: var(--green-dim); color: var(--green); }
+  .tag-down { background: var(--red-dim); color: var(--red); }
+  .tag-neutral { background: var(--faint); color: var(--muted); }
+
+  /* Donut chart area */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+  @media(max-width: 620px) { .charts-row { grid-template-columns: 1fr; } }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem 1.6rem; }
+  .chart-title { font-size: 13px; color: var(--muted); margin-bottom: 1rem; font-family: var(--font-mono); letter-spacing: .04em; }
+  .donut-wrap { display: flex; align-items: center; gap: 1.5rem; }
+  .donut-svg { flex-shrink: 0; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-name { color: var(--muted); flex: 1; }
+  .legend-pct { font-family: var(--font-mono); font-size: 11px; color: var(--text); }
+
+  /* Timeline / history */
+  .history-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem 1.6rem; margin-bottom: 2rem; }
+  .history-title { font-size: 13px; color: var(--muted); font-family: var(--font-mono); margin-bottom: 1.2rem; }
+  .timeline { display: flex; gap: 0; overflow-x: auto; padding-bottom: 0.5rem; }
+  .tl-point { flex: 1; min-width: 80px; text-align: center; position: relative; }
+  .tl-point::before { content: ''; position: absolute; top: 14px; left: 50%; right: -50%; height: 1px; background: var(--border2); z-index: 0; }
+  .tl-point:last-child::before { display: none; }
+  .tl-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--surface3); border: 2px solid var(--border2); margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-family: var(--font-mono); color: var(--muted); position: relative; z-index: 1; }
+  .tl-dot.active { background: var(--green); border-color: var(--green); color: #000; }
+  .tl-month { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
+  .tl-val { font-size: 11px; font-family: var(--font-mono); color: var(--text); margin-top: 3px; }
+  .tl-delta { font-size: 10px; }
+  .tl-delta.up { color: var(--green); }
+  .tl-delta.dn { color: var(--red); }
+
+  /* Edit modal - iPhone safe (no position:fixed) */
+  .modal-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    min-height: 100%;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 18px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 480px;
+    margin-top: 2rem;
+  }
+  .modal h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 400; margin-bottom: 1.5rem; }
+  .modal-close { float: right; background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; margin-top: -4px; }
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-family: var(--font-mono); letter-spacing: .04em; }
+  .field input, .field select, .field textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 9px 12px; color: var(--text);
+    font-family: var(--font-mono); font-size: 13px; outline: none;
+    transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--green); }
+  .field select option { background: var(--surface2); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 1.5rem; }
+  .btn { padding: 9px 22px; border-radius: 8px; font-size: 13px; cursor: pointer; border: none; font-family: var(--font-body); }
+  .btn-primary { background: var(--green); color: #0d1a12; font-weight: 600; }
+  .btn-primary:hover { background: #4de09d; }
+  .btn-ghost { background: var(--surface3); color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); }
+  .btn-danger { background: var(--red-dim); color: var(--red); }
+  .fab { position: fixed; bottom: 2rem; right: 2rem; width: 52px; height: 52px; border-radius: 50%; background: var(--green); border: none; color: #0d1a12; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(62,207,142,0.3); transition: transform .15s; z-index: 200; -webkit-transform: translateZ(0); transform: translateZ(0); }
+  .fab:hover { transform: scale(1.08); }
+  .sub-items-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
+  .sub-item-row { display: flex; gap: 6px; align-items: center; }
+  .sub-item-row input { flex: 1; }
+  .sub-item-row .btn-sm { padding: 5px 10px; font-size: 12px; background: var(--red-dim); color: var(--red); border-radius: 6px; border: none; cursor: pointer; }
+  .add-sub-btn { font-size: 12px; color: var(--green); background: none; border: none; cursor: pointer; padding: 4px 0; font-family: var(--font-mono); }
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+  /* Stock link row */
+  .stock-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .stock-link { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-family: var(--font-mono); text-decoration: none; border: 1px solid var(--border2); color: var(--muted); transition: color .15s, border-color .15s; }
+  .stock-link:hover { color: var(--green); border-color: var(--green); }
+  .stock-link .arrow { font-size: 10px; }
+  .stock-name-link { color: var(--muted); text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 3px; transition: color .15s; }
+  .stock-name-link:hover { color: var(--green); }
+  .stock-name-link .link-arrow { font-size: 10px; opacity: 0.6; }
+</style>
+</head>
+<body>
+<div class="app">
+  <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:1.2rem;font-family:var(--font-mono);">← 홈으로</a>
+  <div class="header">
+    <div class="header-top">
+      <h1>나의 <em>자산</em> 현황</h1>
+      <span class="as-of" id="asOf"></span>
+    </div>
+  </div>
+
+
+  <div class="net-worth-bar">
+    <div class="nw-main">
+      <div class="nw-label">순 자산 (총 자산 − 부채)</div>
+      <div class="nw-value" id="netWorthVal">—</div>
+      <div class="ratio-bar"><div class="ratio-fill" id="ratioFill" style="width:0%"></div></div>
+    </div>
+    <div class="nw-meta">
+      <div class="nw-item">
+        <div class="lbl">총 자산</div>
+        <div class="val pos" id="totalAssetsVal">—</div>
+      </div>
+      <div class="nw-item">
+        <div class="lbl">총 부채</div>
+        <div class="val neg" id="totalDebtVal">—</div>
+      </div>
+      <div class="nw-item">
+        <div class="lbl">자산 비율</div>
+        <div class="val" id="ratioVal" style="color:var(--teal)">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">자산 구성 비율</div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" id="donutAsset" width="110" height="110" viewBox="0 0 110 110"></svg>
+        <div class="donut-legend" id="assetLegend"></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">월별 순자산 추이</div>
+      <svg id="sparkline" width="100%" height="100" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="history-card">
+    <div class="history-title">6개월 스냅샷</div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <div class="section-label">자산 항목</div>
+  <div class="asset-grid" id="assetGrid"></div>
+
+  <div class="section-label">부채 항목</div>
+  <div class="asset-grid" id="debtGrid"></div>
+
+  <!-- 모달 — .app 안에 위치해야 position:absolute 작동 -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <h2 id="modalTitle">항목 추가</h2>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+</div>
+
+<button class="fab" onclick="openAddModal()" title="항목 추가">＋</button>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const TYPES = [
+  { id:'deposit',  label:'예금',   icon:'🏦', colorClass:'deposit',  badge:'badge-deposit'  },
+  { id:'savings',  label:'적금',   icon:'💰', colorClass:'savings',  badge:'badge-savings'  },
+  { id:'stock',    label:'주식·배당', icon:'📈', colorClass:'stock', badge:'badge-stock'    },
+  { id:'cash',     label:'현금',   icon:'💵', colorClass:'cash',     badge:'badge-cash'     },
+  { id:'physical', label:'현물',   icon:'🪙', colorClass:'physical', badge:'badge-physical' },
+  { id:'debt',     label:'부채',   icon:'📉', colorClass:'debt',     badge:'badge-debt'     },
+];
+const COLORS = { deposit:'#5b9cf6', savings:'#2dd4bf', stock:'#3ecf8e', cash:'#f5a623', physical:'#a78bfa', debt:'#f06565' };
+
+let items = [
+  { id:1, type:'deposit',  name:'국민은행 보통예금', amount:8500000,  note:'생활비 계좌', subitems:[] },
+  { id:2, type:'deposit',  name:'카카오뱅크 정기예금', amount:15000000, note:'연 3.5% / 만기 2025-09', subitems:[] },
+  { id:3, type:'savings',  name:'청약 적금', amount:4200000, note:'월 30만원 / 잔여 14개월', subitems:[] },
+  { id:4, type:'savings',  name:'목돈 마련 적금', amount:2400000, note:'월 20만원 / 잔여 8개월', subitems:[] },
+  { id:5, type:'stock',    name:'국내 주식', amount:12300000, note:'', subitems:[
+    { name:'삼성전자 120주', value:9240000, change:'+2.1%' },
+    { name:'카카오 50주', value:2100000, change:'-1.5%' },
+    { name:'배당금 누적', value:960000, change:'+배당' },
+  ]},
+  { id:6, type:'stock',    name:'해외 ETF', amount:5800000, note:'', subitems:[
+    { name:'S&P500 ETF', value:3900000, change:'+5.3%' },
+    { name:'나스닥 ETF', value:1900000, change:'+3.8%' },
+  ]},
+  { id:7, type:'cash',     name:'지갑 현금', amount:350000, note:'', subitems:[] },
+  { id:8, type:'cash',     name:'비상금 봉투', amount:500000, note:'서랍 보관', subitems:[] },
+  { id:9, type:'physical', name:'금 (순금 10돈)', amount:3200000, note:'', subitems:[] },
+  { id:10, type:'physical', name:'달러 현금', amount:1500000, note:'$1,100 보유', subitems:[] },
+  { id:11, type:'debt',    name:'전세대출', amount:50000000, note:'연 3.2% / 2026-06 만기', subitems:[] },
+  { id:12, type:'debt',    name:'신용카드 미결제', amount:450000, note:'이번 달 청구 예정', subitems:[] },
+];
+let nextId = 100;
+
+// Monthly snapshot data
+const monthSnaps = [
+  { month:'10월', total:46500000 },
+  { month:'11월', total:48200000 },
+  { month:'12월', total:47800000 },
+  { month:'1월',  total:49600000 },
+  { month:'2월',  total:51200000 },
+  { month:'3월',  total:null }, // current
+];
+
+// ── COMPUTED ──────────────────────────────────────────────────────────────────
+function totalAssets() {
+  return items.filter(i=>i.type!=='debt').reduce((s,i)=>s+i.amount,0);
+}
+function totalDebt() {
+  return items.filter(i=>i.type==='debt').reduce((s,i)=>s+i.amount,0);
+}
+function netWorth() { return totalAssets() - totalDebt(); }
+
+function assetsByType() {
+  const m = {};
+  items.filter(i=>i.type!=='debt').forEach(i=>{
+    m[i.type] = (m[i.type]||0) + i.amount;
+  });
+  return m;
+}
+
+// ── FORMAT ────────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if(n >= 100000000) return (n/100000000).toFixed(1)+'억';
+  if(n >= 10000) return Math.round(n/10000).toLocaleString('ko-KR')+'만원';
+  return n.toLocaleString('ko-KR')+'원';
+}
+function fmtFull(n) {
+  return n.toLocaleString('ko-KR')+'원';
+}
+
+// ── RENDER OVERVIEW ──────────────────────────────────────────────────────────
+function renderOverview() {
+  const ta = totalAssets(), td = totalDebt(), nw = netWorth();
+  document.getElementById('netWorthVal').textContent = fmt(nw);
+  document.getElementById('totalAssetsVal').textContent = fmt(ta);
+  document.getElementById('totalDebtVal').textContent = fmt(td);
+  const ratio = ta > 0 ? Math.round((ta-td)/ta*100) : 0;
+  document.getElementById('ratioVal').textContent = ratio+'%';
+  document.getElementById('ratioFill').style.width = Math.max(0, ratio)+'%';
+  const now = new Date();
+  document.getElementById('asOf').textContent = `기준일: ${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+}
+
+// ── DONUT CHART ──────────────────────────────────────────────────────────────
+function renderDonut() {
+  const abt = assetsByType();
+  const ta = totalAssets();
+  const entries = TYPES.filter(t=>t.id!=='debt').map(t=>({
+    type:t, val: abt[t.id]||0
+  })).filter(e=>e.val>0);
+
+  const cx=55, cy=55, r=38, stroke=16;
+  const circumference = 2*Math.PI*r;
+  let offset = 0;
+  let svgParts = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1e222d" stroke-width="${stroke}"/>`;
+  entries.forEach(e=>{
+    const pct = e.val/ta;
+    const dash = pct * circumference;
+    const gap = circumference - dash;
+    const rotation = (offset/ta)*360 - 90;
+    svgParts += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${COLORS[e.type.id]}" stroke-width="${stroke}" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" transform="rotate(${rotation.toFixed(2)} ${cx} ${cy})" stroke-linecap="round"/>`;
+    offset += e.val;
+  });
+  document.getElementById('donutAsset').innerHTML = svgParts;
+
+  const legend = entries.map(e=>`
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${COLORS[e.type.id]}"></div>
+      <span class="legend-name">${e.type.label}</span>
+      <span class="legend-pct">${Math.round(e.val/ta*100)}%</span>
+    </div>`).join('');
+  document.getElementById('assetLegend').innerHTML = legend;
+}
+
+// ── SPARKLINE ────────────────────────────────────────────────────────────────
+function renderSparkline() {
+  const nw = netWorth();
+  const data = [...monthSnaps.slice(0,-1).map(s=>s.total), nw];
+  const min = Math.min(...data) * 0.95;
+  const max = Math.max(...data) * 1.02;
+  const W=300, H=100, pad=10;
+  const pts = data.map((v,i)=>{
+    const x = pad + (i/(data.length-1))*(W-pad*2);
+    const y = H - pad - ((v-min)/(max-min))*(H-pad*2);
+    return [x,y];
+  });
+  const path = pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
+  const area = path + ` L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
+  const labels = [...monthSnaps.slice(0,-1).map(s=>s.month), '현재'];
+
+  let svg = `<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3ecf8e" stop-opacity=".25"/><stop offset="100%" stop-color="#3ecf8e" stop-opacity="0"/></linearGradient></defs>`;
+  svg += `<path d="${area}" fill="url(#sg)"/>`;
+  svg += `<path d="${path}" fill="none" stroke="#3ecf8e" stroke-width="1.5"/>`;
+  pts.forEach((p,i)=>{
+    const isLast = i===pts.length-1;
+    svg += `<circle cx="${p[0]}" cy="${p[1]}" r="${isLast?4:2.5}" fill="${isLast?'#3ecf8e':'#1e222d'}" stroke="#3ecf8e" stroke-width="1.5"/>`;
+    svg += `<text x="${p[0]}" y="${H-1}" text-anchor="middle" font-size="8" fill="#7a8099" font-family="DM Mono,monospace">${labels[i]}</text>`;
+  });
+  document.getElementById('sparkline').innerHTML = svg;
+}
+
+// ── TIMELINE ─────────────────────────────────────────────────────────────────
+function renderTimeline() {
+  const nw = netWorth();
+  const snaps = [...monthSnaps.slice(0,-1), { month:'현재', total: nw }];
+  const html = snaps.map((s,i)=>{
+    const isLast = i===snaps.length-1;
+    const prev = snaps[i-1];
+    const delta = prev ? s.total - prev.total : 0;
+    const deltaStr = delta===0?'':(delta>0?`+${fmt(delta)}`:fmt(delta));
+    const deltaClass = delta>0?'up':'dn';
+    return `<div class="tl-point">
+      <div class="tl-dot${isLast?' active':''}">${s.month.slice(0,-1)}</div>
+      <div class="tl-month">${s.month}</div>
+      <div class="tl-val">${fmt(s.total)}</div>
+      ${deltaStr?`<div class="tl-delta ${deltaClass}">${deltaStr}</div>`:''}
+    </div>`;
+  }).join('');
+  document.getElementById('timeline').innerHTML = html;
+}
+
+// ── CARDS ─────────────────────────────────────────────────────────────────────
+function renderCards() {
+  const assets = items.filter(i=>i.type!=='debt');
+  const debts  = items.filter(i=>i.type==='debt');
+
+  function makeCard(item) {
+    const typeInfo = TYPES.find(t=>t.id===item.type);
+    const subHtml = item.subitems && item.subitems.length > 0
+      ? `<div class="card-items">${item.subitems.map(s=>`
+          <div class="card-item">
+            <span class="item-name">${s.name}</span>
+            <span class="item-val">${fmtFull(s.value)} ${s.change?`<span class="item-tag ${s.change.startsWith('+')?'tag-up':'tag-neutral'}">${s.change}</span>`:''}</span>
+          </div>`).join('')}</div>` : '';
+    return `<div class="asset-card card-${item.type}" onclick="openEditModal(${item.id})">
+      <div class="card-header">
+        <div class="card-icon icon-${item.type}">${typeInfo.icon}</div>
+        <span class="card-badge ${typeInfo.badge}">${typeInfo.label}</span>
+      </div>
+      <div class="card-title">${item.name}</div>
+      <div class="card-amount asset-color-${item.type}">${fmt(item.amount)}</div>
+      ${item.note?`<div class="card-sub">${item.note}</div>`:''}
+      ${subHtml}
+    </div>`;
+  }
+
+  document.getElementById('assetGrid').innerHTML = assets.map(makeCard).join('');
+  document.getElementById('debtGrid').innerHTML = debts.map(makeCard).join('');
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderOverview();
+  renderDonut();
+  renderSparkline();
+  renderTimeline();
+  renderCards();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = '새 항목 추가';
+  document.getElementById('modalBody').innerHTML = buildForm(null);
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function openEditModal(id) {
+  const item = items.find(i=>i.id===id);
+  if(!item) return;
+  document.getElementById('modalTitle').textContent = '항목 수정';
+  document.getElementById('modalBody').innerHTML = buildForm(item);
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function buildForm(item) {
+  const typeOpts = TYPES.map(t=>`<option value="${t.id}"${item&&item.type===t.id?' selected':''}>${t.label}</option>`).join('');
+  const subitemsHtml = (item&&item.subitems||[]).map((s,i)=>`
+    <div class="sub-item-row" id="subrow_${i}">
+      <input placeholder="항목명" value="${s.name}" oninput="updateSubItem(${i},'name',this.value)"/>
+      <input type="number" placeholder="금액" value="${s.value}" oninput="updateSubItem(${i},'value',+this.value)" style="max-width:120px"/>
+      <input placeholder="변동률" value="${s.change||''}" oninput="updateSubItem(${i},'change',this.value)" style="max-width:80px"/>
+      <button class="btn-sm" onclick="removeSubItem(${i})">✕</button>
+    </div>`).join('');
+
+  return `
+    <div id="tempSubItems" data-items='${JSON.stringify(item?item.subitems:[])}'></div>
+    <div class="field"><label>유형</label><select id="f_type" onchange="onTypeChange()">${typeOpts}</select></div>
+    <div class="field"><label>항목 이름</label><input id="f_name" value="${item?item.name:''}" placeholder="예: 국민은행 정기예금"/></div>
+    <div class="field"><label>금액 (원)</label><input id="f_amount" type="number" value="${item?item.amount:''}" placeholder="0"/></div>
+    <div class="field"><label>메모</label><input id="f_note" value="${item?item.note:''}" placeholder="금리, 만기일 등"/></div>
+    <div class="divider"></div>
+    <div class="field"><label>세부 항목 (선택)</label>
+      <div class="sub-items-list" id="subItemsList">${subitemsHtml}</div>
+      <button class="add-sub-btn" onclick="addSubItem()">＋ 세부 항목 추가</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveItem(${item?item.id:-1})">${item?'저장':'추가'}</button>
+      ${item?`<button class="btn btn-danger" onclick="deleteItem(${item.id})">삭제</button>`:''}
+      <button class="btn btn-ghost" onclick="closeModal()">취소</button>
+    </div>`;
+}
+
+let tempSubs = [];
+function onTypeChange(){}
+
+function addSubItem() {
+  const list = document.getElementById('subItemsList');
+  const i = list.children.length;
+  const div = document.createElement('div');
+  div.className = 'sub-item-row';
+  div.id = `subrow_${i}`;
+  div.innerHTML = `<input placeholder="항목명" oninput=""/><input type="number" placeholder="금액" style="max-width:120px"/><input placeholder="변동률" style="max-width:80px"/><button class="btn-sm" onclick="this.parentElement.remove()">✕</button>`;
+  list.appendChild(div);
+}
+
+function saveItem(id) {
+  const type = document.getElementById('f_type').value;
+  const name = document.getElementById('f_name').value.trim();
+  const amount = parseInt(document.getElementById('f_amount').value)||0;
+  const note = document.getElementById('f_note').value.trim();
+  if(!name) { alert('이름을 입력하세요'); return; }
+
+  // collect subitems from DOM
+  const rows = document.querySelectorAll('#subItemsList .sub-item-row');
+  const subs = [];
+  rows.forEach(row=>{
+    const inputs = row.querySelectorAll('input');
+    const n = inputs[0].value.trim();
+    const v = parseInt(inputs[1].value)||0;
+    const c = inputs[2].value.trim();
+    if(n) subs.push({ name:n, value:v, change:c });
+  });
+
+  if(id === -1) {
+    items.push({ id: nextId++, type, name, amount, note, subitems: subs });
+  } else {
+    const item = items.find(i=>i.id===id);
+    if(item) Object.assign(item, { type, name, amount, note, subitems: subs });
+  }
+  closeModal();
+  renderAll();
+}
+
+function deleteItem(id) {
+  if(!confirm('삭제하시겠습니까?')) return;
+  items = items.filter(i=>i.id!==id);
+  closeModal();
+  renderAll();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+document.getElementById('modalOverlay').addEventListener('click', e=>{
+  if(e.target===e.currentTarget) closeModal();
+});
+
+
+// ── NAVER FINANCE LINKS ───────────────────────────────────────────────────────
+// 국내 종목코드 매핑 (종목명 → 코드)
+const KR_CODES = {
+  '삼성전자': '005930',
+  '카카오':   '035720',
+  'SK하이닉스': '000660',
+  'LG에너지솔루션': '373220',
+  '현대차': '005380',
+  'NAVER': '035420',
+  '셀트리온': '068270',
+  'KB금융': '105560',
+  '신한지주': '055550',
+  'POSCO홀딩스': '005490',
+};
+
+// 해외 ETF/주식 심볼 매핑 (종목명 → 심볼)
+const US_SYMBOLS = {
+  'S&P500 ETF': 'SPY',
+  '나스닥 ETF': 'QQQ',
+  '애플': 'AAPL',
+  '테슬라': 'TSLA',
+  '마이크로소프트': 'MSFT',
+  '엔비디아': 'NVDA',
+  '구글': 'GOOGL',
+  '아마존': 'AMZN',
+};
+
+function getNaverLinks(subitemName) {
+  // 국내 종목 매핑 확인
+  for (const [name, code] of Object.entries(KR_CODES)) {
+    if (subitemName.includes(name)) {
+      return {
+        url: `https://finance.naver.com/item/main.naver?code=${code}`,
+        label: name,
+        market: '코스피'
+      };
+    }
+  }
+  // 해외 ETF/주식 매핑 확인
+  for (const [name, sym] of Object.entries(US_SYMBOLS)) {
+    if (subitemName.includes(name) || subitemName.includes(sym)) {
+      return {
+        url: `https://finance.naver.com/world/sise.naver?symbol=${sym}`,
+        label: sym,
+        market: '해외'
+      };
+    }
+  }
+  return null;
+}
+
+// ── CARDS (updated with stock links) ─────────────────────────────────────────
+function renderCards() {
+  const assets = items.filter(i=>i.type!=='debt');
+  const debts  = items.filter(i=>i.type==='debt');
+
+  function makeCard(item) {
+    const typeInfo = TYPES.find(t=>t.id===item.type);
+
+    let subHtml = '';
+    if (item.subitems && item.subitems.length > 0) {
+      const rows = item.subitems.map(s => {
+        const link = item.type === 'stock' ? getNaverLinks(s.name) : null;
+        const nameHtml = link
+          ? `<a href="${link.url}" target="_blank" class="stock-name-link" title="${link.label} 네이버금융에서 보기">${s.name} <span class="link-arrow">↗</span></a>`
+          : `<span class="item-name">${s.name}</span>`;
+        const tagClass = s.change && s.change.startsWith('+') ? 'tag-up' : s.change && s.change.startsWith('-') ? 'tag-down' : 'tag-neutral';
+        return `<div class="card-item">
+          ${nameHtml}
+          <span class="item-val">${fmtFull(s.value)}${s.change ? ` <span class="item-tag ${tagClass}">${s.change}</span>` : ''}</span>
+        </div>`;
+      }).join('');
+      subHtml = `<div class="card-items">${rows}</div>`;
+    }
+
+    // stock 카드 하단에 네이버금융 일괄 링크 버튼
+    const stockLinksHtml = item.type === 'stock' ? `
+      <div class="stock-links">
+        <span style="font-size:11px;color:var(--faint);font-family:var(--font-mono);align-self:center">네이버금융</span>
+        ${item.subitems.map(s => {
+          const link = getNaverLinks(s.name);
+          if (!link) return '';
+          return `<a href="${link.url}" target="_blank" class="stock-link">
+            <span>${link.label}</span><span class="arrow">↗</span>
+          </a>`;
+        }).filter(Boolean).join('')}
+        <a href="https://finance.naver.com/sise/sise_market_sum.naver" target="_blank" class="stock-link" style="margin-left:auto">
+          <span>전체 시세</span><span class="arrow">↗</span>
+        </a>
+      </div>` : '';
+
+    return `<div class="asset-card card-${item.type}" onclick="openEditModal(${item.id})">
+      <div class="card-header">
+        <div class="card-icon icon-${item.type}">${typeInfo.icon}</div>
+        <span class="card-badge ${typeInfo.badge}">${typeInfo.label}</span>
+      </div>
+      <div class="card-title">${item.name}</div>
+      <div class="card-amount asset-color-${item.type}">${fmt(item.amount)}</div>
+      ${item.note?`<div class="card-sub">${item.note}</div>`:''}
+      ${subHtml}
+      ${stockLinksHtml}
+    </div>`;
+  }
+
+  document.getElementById('assetGrid').innerHTML = assets.map(makeCard).join('');
+  document.getElementById('debtGrid').innerHTML = debts.map(makeCard).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>
