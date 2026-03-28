@@ -567,6 +567,7 @@ function saveItem(id) {
     const item = items.find(i=>i.id===id);
     if(item) Object.assign(item, { type, name, amount, note, subitems: subs });
   }
+  saveAssets();
   closeModal();
   renderAll();
 }
@@ -574,6 +575,7 @@ function saveItem(id) {
 function deleteItem(id) {
   if(!confirm('삭제하시겠습니까?')) return;
   items = items.filter(i=>i.id!==id);
+  saveAssets();
   closeModal();
   renderAll();
 }
@@ -696,6 +698,22 @@ function renderCards() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+/* localStorage */
+const LS_KEY = 'finance_asset_v1';
+function saveAssets(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({items, nextId})); }catch(e){}
+}
+function loadAssets(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed.items)  items  = parsed.items;
+      if(parsed.nextId) nextId = parsed.nextId;
+    }
+  }catch(e){}
+}
+loadAssets();
 renderAll();
 </script>
 </body>
