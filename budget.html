@@ -86,11 +86,7 @@ tr:last-child td{border-bottom:none}
   <button class="tab" onclick="switchTab('weekly')">주간 캘린더</button>
   <button class="tab" onclick="switchTab('daily')">일별 상세</button>
   <button class="tab" onclick="switchTab('add')">내역 추가</button>
-  <select class="month-sel" id="monthSel" onchange="changeMonth()">
-    <option value="2025-03">2025년 3월</option>
-    <option value="2025-02">2025년 2월</option>
-    <option value="2025-01">2025년 1월</option>
-  </select>
+  <select class="month-sel" id="monthSel" onchange="changeMonth()"></select>
 </div>
 
 <div id="tab-overview" class="panel act">
@@ -154,38 +150,12 @@ var METHOD_COLORS = {'신용카드':'#378add','체크카드':'#1a9e6e','현금':
 
 var CAT_COLORS = {'의류':'#f06595','교통':'#378add','생필품':'#1a9e6e','식비':'#f5a623','경조사':'#e24b4a','문화생활':'#7f77dd','건강':'#2dd4bf','공과금':'#f0953a','후원금':'#3ecf8e','기타':'#888780'};
 
-var curMonth = '2025-03';
+var curMonth = '2026-03';
 var curDay = null;
 var flowChart = null;
-var nextId = 100;
+var nextId = 1;
 
-var data = {
-  '2025-03': [
-    {id:1,  type:'income',  date:'2025-03-05', cat:'임금',     method:'계좌이체', amt:3200000, memo:'3월 급여'},
-    {id:2,  type:'income',  date:'2025-03-10', cat:'정부지원금', method:'계좌이체', amt:500000,  memo:'청년지원금'},
-    {id:3,  type:'income',  date:'2025-03-15', cat:'프리랜서',  method:'계좌이체', amt:450000,  memo:'디자인 외주'},
-    {id:4,  type:'expense', date:'2025-03-02', cat:'식비',     method:'신용카드', amt:85000,   memo:'마트'},
-    {id:5,  type:'expense', date:'2025-03-04', cat:'교통',     method:'체크카드', amt:54000,   memo:'교통카드 충전'},
-    {id:6,  type:'expense', date:'2025-03-07', cat:'식비',     method:'신용카드', amt:42000,   memo:'친구 모임'},
-    {id:7,  type:'expense', date:'2025-03-10', cat:'공과금',   method:'현금',    amt:550000,  memo:'월세'},
-    {id:8,  type:'expense', date:'2025-03-12', cat:'의류',     method:'신용카드', amt:128000,  memo:'쇼핑'},
-    {id:9,  type:'expense', date:'2025-03-14', cat:'생필품',   method:'현금',    amt:35000,   memo:'시장'},
-    {id:10, type:'expense', date:'2025-03-18', cat:'공과금',   method:'신용카드', amt:55000,   memo:'통신비'},
-    {id:11, type:'expense', date:'2025-03-20', cat:'문화생활',  method:'현금',    amt:18000,   memo:'영화'},
-    {id:12, type:'expense', date:'2025-03-22', cat:'건강',     method:'신용카드', amt:90000,   memo:'헬스장'},
-    {id:13, type:'income',  date:'2025-03-25', cat:'이자/배당', method:'계좌이체', amt:12000,   memo:'이자'},
-    {id:14, type:'expense', date:'2025-03-28', cat:'건강',     method:'현금',    amt:15000,   memo:'약국'}
-  ],
-  '2025-02': [
-    {id:20, type:'income',  date:'2025-02-05', cat:'임금',   method:'계좌이체', amt:3200000, memo:'2월 급여'},
-    {id:21, type:'expense', date:'2025-02-10', cat:'식비',   method:'신용카드', amt:95000,   memo:'마트'},
-    {id:22, type:'expense', date:'2025-02-15', cat:'공과금', method:'체크카드', amt:550000,  memo:'월세'}
-  ],
-  '2025-01': [
-    {id:30, type:'income',  date:'2025-01-05', cat:'임금', method:'계좌이체', amt:3200000, memo:'1월 급여'},
-    {id:31, type:'expense', date:'2025-01-12', cat:'의류', method:'신용카드', amt:220000,  memo:'신년 쇼핑'}
-  ]
-};
+var data = {};
 
 /* ── localStorage ── */
 var LS_KEY = 'finance_budget_v1';
@@ -400,21 +370,9 @@ function addEntry(){
   saveData();
   document.getElementById('nAmt').value='';
   document.getElementById('nMemo').value='';
-  /* curMonth를 입력한 월로 맞추기 */
+  /* 드롭다운 갱신 후 해당 월 선택 */
   curMonth=m;
-  var sel=document.getElementById('monthSel');
-  var found=false;
-  for(var i=0;i<sel.options.length;i++){
-    if(sel.options[i].value===m){sel.selectedIndex=i;found=true;break;}
-  }
-  if(!found){
-    var parts=m.split('-');
-    var opt=document.createElement('option');
-    opt.value=m;
-    opt.textContent=parts[0]+'년 '+parts[1]+'월';
-    sel.insertBefore(opt,sel.firstChild);
-    sel.selectedIndex=0;
-  }
+  buildMonthSel();
   /* 성공 피드백 */
   var btn=document.getElementById('addBtn');
   if(btn){
@@ -431,6 +389,25 @@ function delEntry(id){
   saveData();
 }
 
+/* 월 드롭다운 동적 생성 */
+function buildMonthSel(){
+  var sel = document.getElementById('monthSel');
+  var now = new Date();
+  var thisMonth = now.getFullYear()+'-'+(now.getMonth()+1<10?'0':'')+(now.getMonth()+1);
+  /* data에 있는 월 + 현재 월 합치기 */
+  var months = Object.keys(data);
+  if(months.indexOf(thisMonth)===-1) months.push(thisMonth);
+  months.sort(function(a,b){return b.localeCompare(a);}); /* 최신순 */
+  sel.innerHTML = months.map(function(m){
+    var parts=m.split('-');
+    return '<option value="'+m+'">'+ parts[0]+'년 '+parseInt(parts[1])+'월</option>';
+  }).join('');
+  /* curMonth가 목록에 없으면 현재 월로 */
+  if(months.indexOf(curMonth)===-1) curMonth=thisMonth;
+  sel.value = curMonth;
+}
+
+buildMonthSel();
 updateCatMethod();
 renderOverview();
 </script>
