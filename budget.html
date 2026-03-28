@@ -187,6 +187,23 @@ var data = {
   ]
 };
 
+/* ── localStorage ── */
+var LS_KEY = 'finance_budget_v1';
+function saveData(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({data:data, nextId:nextId})); }catch(e){}
+}
+function loadData(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      var parsed = JSON.parse(raw);
+      if(parsed.data)   data   = parsed.data;
+      if(parsed.nextId) nextId = parsed.nextId;
+    }
+  }catch(e){}
+}
+loadData();
+
 function fmt(n){ return n.toLocaleString('ko-KR')+'원'; }
 function getE(){ return data[curMonth]||[]; }
 function totInc(){ return getE().filter(function(e){return e.type==='income';}).reduce(function(s,e){return s+e.amt;},0); }
@@ -380,6 +397,7 @@ function addEntry(){
   var m=date.slice(0,7);
   if(!data[m]) data[m]=[];
   data[m].push({id:nextId++,type:type,date:date,cat:cat,method:method,amt:amt,memo:memo});
+  saveData();
   document.getElementById('nAmt').value='';
   document.getElementById('nMemo').value='';
   /* curMonth를 입력한 월로 맞추기 */
@@ -410,6 +428,7 @@ function addEntry(){
 
 function delEntry(id){
   Object.keys(data).forEach(function(m){ data[m]=data[m].filter(function(e){return e.id!==id;}); });
+  saveData();
 }
 
 updateCatMethod();
